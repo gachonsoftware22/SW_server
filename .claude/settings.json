@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import sys,json,subprocess; d=json.load(sys.stdin); fp=d.get('tool_input',{}).get('file_path',''); subprocess.run(['C:/Program Files/Git/usr/bin/bash.exe','./gradlew','compileJava'],cwd='C:/Users/victo/SW_AI_Doc') if fp.endswith('.java') else None\"",
+            "timeout": 60,
+            "statusMessage": "컴파일 확인 중..."
+          }
+        ]
+      }
+    ]
+  }
+}
