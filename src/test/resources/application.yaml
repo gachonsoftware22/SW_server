@@ -1,0 +1,26 @@
+spring:
+  test:
+    database:
+      replace: none
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;NON_KEYWORDS=VALUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: false
+    show-sql: false
+
+jwt:
+  secret: test-secret-key-for-junit-testing-at-least-32-characters
+  access-token-expiration: 1800000
+  refresh-token-expiration: 604800000
+
+gemini:
+  api-key: test-api-key
+  model: gemini-1.5-pro
