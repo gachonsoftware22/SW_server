@@ -17,7 +17,7 @@ RUN ./gradlew dependencies --no-daemon
 COPY src/ src/
 
 RUN ./gradlew bootJar -x test --no-daemon
-
+## 멀티스테이지
 # ── Stage 2: runtime ────────────────────────────────────────────
 FROM eclipse-temurin:17-jre-alpine AS runtime
 WORKDIR /app

@@ -3,7 +3,7 @@ name: Build & Push to Docker Hub
 on:
   push:
     branches:
-      - main
+      - suhan
 
 env:
   IMAGE_NAME: software-eg
