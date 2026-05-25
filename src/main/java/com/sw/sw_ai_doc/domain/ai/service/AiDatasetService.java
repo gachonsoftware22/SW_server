@@ -8,11 +8,13 @@ import com.sw.sw_ai_doc.domain.prescription.entity.PrescriptionDetail;
 import com.sw.sw_ai_doc.domain.prescription.entity.PrescriptionStatus;
 import com.sw.sw_ai_doc.domain.prescription.repository.PrescriptionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -24,6 +26,12 @@ public class AiDatasetService {
     public AiResultRequestDto buildDataset(Long userId) {
         String healthCsv = buildHealthCsv(userId);
         String prescriptionCsv = buildPrescriptionCsv(userId);
+        log.info("[AiDataset] 데이터셋 빌드 완료 - userId={}, healthCsvLines={}, prescriptionCsvLines={}",
+                userId,
+                healthCsv.lines().count(),
+                prescriptionCsv.lines().count());
+        log.debug("[AiDataset] healthCsv:\n{}", healthCsv);
+        log.debug("[AiDataset] prescriptionCsv:\n{}", prescriptionCsv);
         return new AiResultRequestDto(userId, healthCsv, prescriptionCsv);
     }
 

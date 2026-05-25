@@ -5,6 +5,7 @@ import com.sw.sw_ai_doc.domain.ai.service.AiDomainService;
 import com.sw.sw_ai_doc.global.response.ApiResponse;
 import com.sw.sw_ai_doc.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor
@@ -24,7 +26,9 @@ public class AiController {
     @PostMapping("/trigger")
     public ResponseEntity<ApiResponse<AiResultResponseDto>> trigger(
             @AuthenticationPrincipal UserPrincipal principal) {
+        log.info("[AI Trigger] 요청 수신 - userId={}", principal.userId());
         AiResultResponseDto data = aiDomainService.triggerAnalysis(principal.userId());
+        log.info("[AI Trigger] 분석 완료 - userId={}, healthStatus={}", principal.userId(), data.getHealthStatus());
         return ResponseEntity.ok(ApiResponse.success(200, "AI 분석이 완료되었습니다.", data));
     }
 
