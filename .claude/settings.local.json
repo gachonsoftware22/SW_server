@@ -5,7 +5,8 @@
       "Bash(jar xf *)",
       "Bash(xargs -I{} jar tf \"{}\")",
       "Bash(./gradlew compileJava compileTestJava)",
-      "Bash(./gradlew test *)"
+      "Bash(./gradlew test *)",
+      "Bash(./gradlew compileJava --rerun-tasks)"
     ]
   }
 }

@@ -8,5 +8,5 @@ public interface MemberService {
     SignupResponse signup(SignupRequest request);
     MemberInfoResponse getMyInfo(Long userId);
     void updateMyInfo(Long userId, MemberUpdateRequest request);
-    void withdraw(Long userId, WithdrawRequest request);
+    void withdraw(Long userId);
 }

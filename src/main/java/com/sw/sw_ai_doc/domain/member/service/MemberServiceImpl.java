@@ -70,7 +70,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public void withdraw(Long userId, WithdrawRequest request) {
+    public void withdraw(Long userId) {
         User user = findActiveUser(userId);
         user.withdraw(userId);
         refreshTokenRepository.revokeAllByUserId(userId);
