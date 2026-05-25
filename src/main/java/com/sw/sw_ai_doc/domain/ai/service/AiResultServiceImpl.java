@@ -9,7 +9,10 @@ import com.sw.sw_ai_doc.global.exception.AiAnalysisException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
@@ -111,22 +114,61 @@ public class AiResultServiceImpl implements AiResultService {
                 String result = callGemini(userPrompt);
                 log.info("[AiResult] Gemini 호출 성공 - attempt={}", attempt + 1);
                 return result;
+            } catch (HttpClientErrorException e) {
+                lastException = e;
+                if (e.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+                    long waitMs = parseRetryAfterMs(e.getResponseBodyAsString(), delayMs);
+                    log.warn("[AiResult] Gemini 429 Rate Limit - attempt={}/{}, {}ms 후 재시도", attempt + 1, maxRetries, waitMs);
+                    if (attempt < maxRetries - 1) {
+                        sleep(waitMs);
+                        delayMs *= 2;
+                    }
+                } else {
+                    log.error("[AiResult] Gemini 재시도 불가 오류 - status={}, error={}", e.getStatusCode(), e.getMessage());
+                    throw new AiAnalysisException("AI 서비스 오류가 발생했습니다. (" + e.getStatusCode() + ")");
+                }
+            } catch (HttpServerErrorException e) {
+                lastException = e;
+                log.warn("[AiResult] Gemini 5xx 서버 오류 - attempt={}/{}, error={}", attempt + 1, maxRetries, e.getMessage());
+                if (attempt < maxRetries - 1) {
+                    sleep(delayMs);
+                    delayMs *= 2;
+                }
             } catch (Exception e) {
                 lastException = e;
                 log.warn("[AiResult] Gemini 호출 실패 - attempt={}/{}, error={}", attempt + 1, maxRetries, e.getMessage());
                 if (attempt < maxRetries - 1) {
-                    log.info("[AiResult] {}ms 후 재시도...", delayMs);
-                    try {
-                        Thread.sleep(delayMs);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
+                    sleep(delayMs);
                     delayMs *= 2;
                 }
             }
         }
         log.error("[AiResult] Gemini 호출 최종 실패 - 재시도 {}회 소진", maxRetries, lastException);
         throw new AiAnalysisException("AI 분석 서비스에 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    }
+
+    private long parseRetryAfterMs(String responseBody, long fallbackMs) {
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode details = root.path("error").path("details");
+            for (JsonNode detail : details) {
+                JsonNode retryDelay = detail.path("retryDelay");
+                if (!retryDelay.isMissingNode()) {
+                    String raw = retryDelay.asText().replace("s", "").trim();
+                    return (long) (Double.parseDouble(raw) * 1000);
+                }
+            }
+        } catch (Exception ignored) {}
+        return fallbackMs;
+    }
+
+    private void sleep(long ms) {
+        log.info("[AiResult] {}ms 대기...", ms);
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private String callGemini(String userPrompt) {
