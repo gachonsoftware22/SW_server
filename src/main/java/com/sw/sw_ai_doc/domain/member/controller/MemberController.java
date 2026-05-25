@@ -1,6 +1,7 @@
 package com.sw.sw_ai_doc.domain.member.controller;
 
-import com.sw.sw_ai_doc.domain.member.dto.request.*;
+import com.sw.sw_ai_doc.domain.member.dto.request.MemberUpdateRequest;
+import com.sw.sw_ai_doc.domain.member.dto.request.SignupRequest;
 import com.sw.sw_ai_doc.domain.member.dto.response.MemberInfoResponse;
 import com.sw.sw_ai_doc.domain.member.dto.response.SignupResponse;
 import com.sw.sw_ai_doc.global.response.ApiResponse;
@@ -43,9 +44,8 @@ public class MemberController {
 
     @DeleteMapping("/me")
     public ResponseEntity<ApiResponse<Void>> withdraw(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @RequestBody WithdrawRequest request) {
-        memberService.withdraw(principal.userId(), request);
+            @AuthenticationPrincipal UserPrincipal principal) {
+        memberService.withdraw(principal.userId());
         return ResponseEntity.ok(ApiResponse.success(200, "회원 탈퇴가 완료되었습니다."));
     }
 
