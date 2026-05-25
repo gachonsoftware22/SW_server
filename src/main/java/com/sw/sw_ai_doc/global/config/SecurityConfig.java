@@ -55,7 +55,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://gachonswaidoc.s3-website.ap-northeast-2.amazonaws.com"));
+        config.setAllowedOrigins(List.of("http://gachonswaidoc.s3-website.ap-northeast-2.amazonaws.com","https://gachonswaidoc.s3-website.ap-northeast-2.amazonaws.com"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
