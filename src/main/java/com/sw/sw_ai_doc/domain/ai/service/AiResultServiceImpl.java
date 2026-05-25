@@ -7,6 +7,7 @@ import com.sw.sw_ai_doc.domain.ai.dto.AiResultRequestDto;
 import com.sw.sw_ai_doc.domain.ai.entity.AiResultEntity;
 import com.sw.sw_ai_doc.global.exception.AiAnalysisException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiResultServiceImpl implements AiResultService {
@@ -62,8 +64,10 @@ public class AiResultServiceImpl implements AiResultService {
 
     @Override
     public AiResultEntity analyze(AiResultRequestDto request) {
+        log.debug("[AiResult] 분석 시작 - userId={}", request.getUserId());
         String userPrompt = USER_PROMPT_TEMPLATE.formatted(request.getHealthCsv(), request.getPrescriptionCsv());
         String rawResponse = callGeminiWithRetry(userPrompt);
+        log.debug("[AiResult] Gemini 원본 응답:\n{}", rawResponse);
 
         try {
             JsonNode root = objectMapper.readTree(rawResponse);
@@ -77,6 +81,8 @@ public class AiResultServiceImpl implements AiResultService {
                     root.path("recommended_exercises"), new TypeReference<>() {});
             String precautions = root.path("precautions").asText();
 
+            log.info("[AiResult] JSON 파싱 완료 - userId={}, healthStatus={}, diseases={}", request.getUserId(), healthStatus, diseases);
+
             return AiResultEntity.builder()
                     .userId(request.getUserId())
                     .healthStatus(healthStatus)
@@ -89,6 +95,7 @@ public class AiResultServiceImpl implements AiResultService {
                     .rawLlmResponse(rawResponse)
                     .build();
         } catch (Exception e) {
+            log.error("[AiResult] JSON 파싱 실패 - userId={}, rawResponse={}", request.getUserId(), rawResponse, e);
             throw new AiAnalysisException("AI 응답 처리 중 오류가 발생했습니다.");
         }
     }
@@ -99,11 +106,16 @@ public class AiResultServiceImpl implements AiResultService {
         Exception lastException = null;
 
         for (int attempt = 0; attempt < maxRetries; attempt++) {
+            log.info("[AiResult] Gemini 호출 시도 - attempt={}/{}", attempt + 1, maxRetries);
             try {
-                return callGemini(userPrompt);
+                String result = callGemini(userPrompt);
+                log.info("[AiResult] Gemini 호출 성공 - attempt={}", attempt + 1);
+                return result;
             } catch (Exception e) {
                 lastException = e;
+                log.warn("[AiResult] Gemini 호출 실패 - attempt={}/{}, error={}", attempt + 1, maxRetries, e.getMessage());
                 if (attempt < maxRetries - 1) {
+                    log.info("[AiResult] {}ms 후 재시도...", delayMs);
                     try {
                         Thread.sleep(delayMs);
                     } catch (InterruptedException ie) {
@@ -113,6 +125,7 @@ public class AiResultServiceImpl implements AiResultService {
                 }
             }
         }
+        log.error("[AiResult] Gemini 호출 최종 실패 - 재시도 {}회 소진", maxRetries, lastException);
         throw new AiAnalysisException("AI 분석 서비스에 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
 
@@ -128,6 +141,7 @@ public class AiResultServiceImpl implements AiResultService {
             "generationConfig", Map.of("temperature", 0.3)
         );
 
+        log.debug("[AiResult] Gemini API 요청 - model={}", model);
         RestClient restClient = RestClient.create();
         String responseBody = restClient.post()
                 .uri(GEMINI_URL, model, apiKey)
@@ -135,6 +149,8 @@ public class AiResultServiceImpl implements AiResultService {
                 .body(requestBody)
                 .retrieve()
                 .body(String.class);
+
+        log.debug("[AiResult] Gemini HTTP 응답 수신 - bodyLength={}", responseBody != null ? responseBody.length() : 0);
 
         try {
             JsonNode root = objectMapper.readTree(responseBody);
@@ -146,6 +162,7 @@ public class AiResultServiceImpl implements AiResultService {
                        .path("text")
                        .asText();
         } catch (Exception e) {
+            log.error("[AiResult] Gemini 응답 구조 파싱 실패 - responseBody={}", responseBody, e);
             throw new AiAnalysisException("AI 응답 파싱 실패: " + responseBody);
         }
     }
