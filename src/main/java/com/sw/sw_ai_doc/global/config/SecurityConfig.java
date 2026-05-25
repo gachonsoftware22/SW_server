@@ -68,7 +68,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
                 "https://d158biyr86tb19.cloudfront.net",
-                "https://ai-doctor-frontend-team.vercel.app"
+                "https://ai-doctor-frontend-team-t58j.vercel.app"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
