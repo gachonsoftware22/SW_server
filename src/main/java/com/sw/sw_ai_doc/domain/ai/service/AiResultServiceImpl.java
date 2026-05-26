@@ -35,6 +35,8 @@ public class AiResultServiceImpl implements AiResultService {
     private static final String GEMINI_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}";
 
+    private static final long MAX_RETRY_DELAY_MS = 30_000L;
+
     private static final String SYSTEM_PROMPT = """
 당신은 환자의 건강 데이터를 분석하는 의료 AI 어시스턴트입니다.
 아래 지침을 엄격히 따르십시오.
@@ -155,11 +157,12 @@ public class AiResultServiceImpl implements AiResultService {
                 JsonNode retryDelay = detail.path("retryDelay");
                 if (!retryDelay.isMissingNode()) {
                     String raw = retryDelay.asText().replace("s", "").trim();
-                    return (long) (Double.parseDouble(raw) * 1000);
+                    long parsed = (long) (Double.parseDouble(raw) * 1000);
+                    return Math.min(parsed, MAX_RETRY_DELAY_MS);
                 }
             }
         } catch (Exception ignored) {}
-        return fallbackMs;
+        return Math.min(fallbackMs, MAX_RETRY_DELAY_MS);
     }
 
     private void sleep(long ms) {

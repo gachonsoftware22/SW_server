@@ -13,10 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AiDomainServiceImpl implements AiDomainService {
 
     private final AiDatasetService aiDatasetService;
